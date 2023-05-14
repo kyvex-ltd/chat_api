@@ -27,34 +27,53 @@ This API accounts for all the backend functionality of the chat application, lik
   communication and collaboration within servers.
 - **Reactions** - This feature would add support for reactions to make conversations more expressive
   and engaging.
-- **Search functionality** - This feature would enable users to search for specific messages, servers, or channels to find
+- **Search functionality** - This feature would enable users to search for specific messages, servers, or channels to
+  find
   what they're looking for.
 
 ## Table of Contents
 
+- [Chat API](#chat-api)
+    - [Table of Contents](#table-of-contents)
+    - [TODO: Endpoints](#endpoints)
+        - [User Endpoints](#user-endpoints)
+        - [Message Endpoints](#message-endpoints)
+        - [Community Endpoints](#community-endpoints)
+        - [Category and Channel Endpoints](#category-and-channel-endpoints)
+        - [Friend Request Endpoints](#friend-request-endpoints)
+        - [Authentication Endpoints](#authentication-endpoints)
+        - [Direct Messaging Endpoints](#direct-messaging-endpoints)
+        - [User Status Endpoints](#user-status-endpoints)
+        - [Reaction Endpoints](#reaction-endpoints)
+        - [Search Endpoints](#search-endpoints)
+
 ## To Do
 
-### User Endpoints
+### Endpoints
 
 #### User endpoints:
-- [ ] POST /users - create a new user
-- [ ] GET /users/:id - retrieve a specific user
-- [ ] PUT /users/:id - update a specific user
-- [ ] DELETE /users/:id - delete a specific user
+
+- [X] POST /users - create a new user
+- [X] GET /users/:id - retrieve a specific user
+- [X] PUT /users/:id - update a specific user
+- [X] DELETE /users/:id - delete a specific user
 
 #### Message endpoints:
+
 - [ ] POST /messages - create a new message
 - [ ] GET /messages/:id - retrieve a specific message
 - [ ] PUT /messages/:id - update a specific message
 - [ ] DELETE /messages/:id - delete a specific message
 
-#### Server endpoints:
-- [ ] POST /servers - create a new server
-- [ ] GET /servers/:id - retrieve a specific server
-- [ ] PUT /servers/:id - update a specific server
-- [ ] DELETE /servers/:id - delete a specific server
+#### Community endpoints:
+
+- [ ] POST /community - create a new community
+- [ ] GET /community/:id - retrieve a specific community
+- [ ] PUT /community/:id - update a specific community
+- [ ] DELETE /community/:id - delete a specific community
 
 #### Category and Channel endpoints:
+
 - [ ] POST /categories - create a new category
 - [ ] GET /categories/:id - retrieve a specific category
 - [ ] PUT /categories/:id - update a specific category
@@ -65,30 +84,36 @@ This API accounts for all the backend functionality of the chat application, lik
 - [ ] DELETE /channels/:id - delete a specific channel
 
 #### Friend request endpoints:
+
 - [ ] POST /friend-requests - send a friend request
 - [ ] GET /friend-requests/:id - retrieve a specific friend request
 - [ ] PUT /friend-requests/:id - accept or decline a friend request
 - [ ] DELETE /friend-requests/:id - delete a specific friend request
 
 #### Authentication endpoints:
+
 - [ ] POST /auth/login - authenticate a user and generate a token
 - [ ] POST /auth/logout - invalidate a token and log the user out
 
 #### Direct messaging endpoints:
+
 - [ ] POST /direct-messages - send a direct message
 - [ ] GET /direct-messages/:id - retrieve a specific direct message
 - [ ] PUT /direct-messages/:id - update a specific direct message
 - [ ] DELETE /direct-messages/:id - delete a specific direct message
 
 #### User status endpoints:
+
 - [ ] POST /users/:id/status - set a user's status
 - [ ] GET /users/:id/status - retrieve a user's status
 
 #### Reaction endpoints:
+
 - [ ] POST /messages/:id/reactions - add a reaction to a message
 - [ ] GET /messages/:id/reactions - retrieve reactions for a message
 
 #### Search endpoints:
+
 - [ ] GET /search/messages?q=searchTerm - search for messages
 - [ ] GET /search/servers?q=searchTerm - search for servers
 - [ ] GET /search/channels?q=searchTerm - search for channels
