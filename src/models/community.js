@@ -5,12 +5,29 @@
 const mongoose = require('mongoose');
 
 // Define the schema
-const CommunitySchema = new mongoose.Schema({
+const communitySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
         unique: true
     },
+    description: {
+        type: String,
+        maxlength: 200,
+        default: ''
+    },
+    icon: {
+        type: Buffer,
+        default: null
+    },
+    banner: {
+        type: Buffer,
+        default: null
+    },
+
+
+
+
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -20,15 +37,12 @@ const CommunitySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    servers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Server'
-    }],
     created: {
         type: Date,
         default: Date.now
-    }
+    },
 });
 
 // Export the model
 module.exports = mongoose.model('Community', CommunitySchema);
+
