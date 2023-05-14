@@ -92,8 +92,8 @@ This API accounts for all the backend functionality of the chat application, lik
 
 #### Authentication endpoints:
 
-- [ ] POST /auth/login - authenticate a user and generate a token
-- [ ] POST /auth/logout - invalidate a token and log the user out
+- [X] POST /auth/login - authenticate a user and generate a token
+- [X] POST /auth/logout - invalidate a token and log the user out
 
 #### Direct messaging endpoints:
 

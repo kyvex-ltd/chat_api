@@ -10,15 +10,21 @@ app.use(express.json());
 app.use(cors());
 
 // Connect to MongoDB
-connectDB().then(r => console.log('MongoDB connected!')
+connectDB().then(r => console.log("Connected to MongoDB" + r)
 ).catch(err => {
     console.error(err.message);
     process.exit(1);
 });
 
 // Define your routes
-const usersRoutes = require('./routes/users');
-app.use('/api/v1/users', usersRoutes);
+const
+    routes = {
+        auth: require('./routes/auth'),
+        users: require('./routes/users'),
+    };
+
+app.use('/api/v1/users', routes.users);
+app.use('/api/v1/auth', routes.auth);
 
 // Set up a 404 error handler
 app.use((req, res, next) => {
@@ -28,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // Set up a global error handler
-app.use((error, req, res, next) => {
+app.use((error, req, res) => {
     res.status(error.status || 500);
     res.json({
         error: {
