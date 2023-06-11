@@ -11,15 +11,15 @@ const communitySchema = new mongoose.Schema({
         required: true,
         unique: false
     },
-    description: {
-        type: String,
-        maxlength: 200,
-        default: ''
-    },
     owner: {
         type: String,
         ref: 'User',
         required: true
+    },
+    description: {
+        type: String,
+        maxlength: 200,
+        default: ''
     },
     icon: {
         type: Buffer,
