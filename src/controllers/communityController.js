@@ -1,74 +1,168 @@
 const Community = require('../models/community');
+const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+const auth = require('../middleware/auth');
+const pictureGenerator = require('../utilities/createImage');
 
-const create = async (req, res) => {
+const createCommunity = async (req, res) => {
+    const { name, description } = req.body;
+
+    if (!name || !description) {
+        return res.status(400).json({
+            message: `Please ensure all fields are filled out, missing ${
+                !name ? 'name' : 'description'
+            }`,
+        });
+    }
+
     try {
-        const {name, description} = req.body;
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Create new community
-        const community = new Community({name, description});
-        const savedCommunity = await community.save();
+        if (!decoded) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
 
-        res.status(201).json(savedCommunity);
-    } catch (error) {
-        res.status(500).json({error: error.message});
+        const userData = await User.findOne({ _id: decoded.id });
+
+        if (!userData) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const community = new Community({
+            name,
+            owner: userData.tag,
+            description,
+            icon: pictureGenerator.createProfilePicture(name),
+            members: [userData._id],
+        });
+
+        userData.servers.push({
+            serverId: community._id,
+            role: 'owner',
+        });
+
+        await userData.save();
+        await community.save();
+
+        return res.status(201).json({ community });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
-const get = async (req, res) => {
-    try {
-        const {id} = req.params;
+const getCommunityById = async (req, res) => {
+    const { id } = req.params;
 
-        // Find community by ID
-        const community = await Community.findById(id);
+    if (!id) {
+        return res.status(400).json({ message: `Please provide a community ID` });
+    }
+
+    try {
+        const community = await Community.findOne({ _id: id });
+
         if (!community) {
-            return res.status(404).json({error: 'Community not found'});
+            return res.status(404).json({ message: 'Community not found' });
         }
 
-        res.status(200).json(community);
-    } catch (error) {
-        res.status(500).json({error: error.message});
+        return res.status(200).json({ community });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
-const update = async (req, res) => {
-    try {
-        const {id} = req.params;
-        const {name, description} = req.body;
+const updateCommunity = async (req, res) => {
+    const { id } = req.params;
+    const { name, description } = req.body;
 
-        // Find community by ID
-        const community = await Community.findById(id);
+    if (!id) {
+        return res.status(400).json({ message: 'Please provide a community ID' });
+    }
+
+    try {
+        const community = await Community.findOne({ _id: id });
+
         if (!community) {
-            return res.status(404).json({error: 'Community not found'});
+            return res.status(404).json({ message: 'Community not found' });
         }
 
-        // Update community
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!decoded) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
+        if (community.owner !== decoded.tag) {
+            return res
+                .status(401)
+                .json({ message: 'You are not the owner of this community' });
+        }
+
         community.name = name;
         community.description = description;
-        const savedCommunity = await Community.save();
 
-        res.status(200).json(savedCommunity);
-    } catch (error) {
-        res.status(500).json({error: error.message});
+        await community.save();
+
+        return res.status(200).json({ community });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
 
-const remove = async (req, res) => {
+const deleteCommunity = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: 'Please provide a community ID' });
+    }
+
     try {
-        const {id} = req.params;
+        const community = await Community.findOne({ _id: id });
 
-        // Find community by ID
-        const community = await Community.findById(id);
         if (!community) {
-            return res.status(404).json({error: 'Community not found'});
+            return res.status(404).json({ message: 'Community not found' });
         }
 
-        // Delete community
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!decoded) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
+        if (community.owner !== decoded.tag) {
+            return res
+                .status(401)
+                .json({ message: 'You are not the owner of this community' });
+        }
+
         await community.remove();
 
-        res.status(204).json();
-    } catch (error) {
-        res.status(500).json({error: error.message});
+        return res.status(200).json({ community });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
 
-module.exports = {create, get, update, remove}
+const getAllCommunities = async (req, res) => {
+    try {
+        const communities = await Community.find({});
+        return res.status(200).json({ communities });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+module.exports = {
+    createCommunity,
+    getCommunityById,
+    updateCommunity,
+    deleteCommunity,
+    getAllCommunities,
+};
