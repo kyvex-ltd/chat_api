@@ -4,8 +4,8 @@ const
     UserModel = require('../models/user'),
     bcrypt = require('bcryptjs'),
     jwt = require('jsonwebtoken'),
-    auth = require('../middleware/auth'),
-    secret = process.env.JWT_SECRET;
+    secret = process.env.JWT_SECRET,
+    createProfilePicture = require('../utilities/createImage');
 
 /*
     - Create a new user
@@ -40,10 +40,13 @@ const createUser = async (req, res) => {
             if (user) return res.status(400).json({msg: 'Tag already taken'});
         });
 
+        const avatar = await createProfilePicture(tag[0].toUpperCase());
+
         const newUser = new UserModel({
             tag,
             displayName,
             email,
+            avatar,
             password: hash
         });
 

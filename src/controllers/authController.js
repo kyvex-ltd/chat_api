@@ -1,68 +1,68 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const User = require('../models/user');
 require('dotenv').config();
 
-const secret = process.env.JWT_SECRET;
+const
+    jwt = require('jsonwebtoken'),
+    bcrypt = require('bcrypt'),
+    User = require('../models/user'),
+    auth = require('../middleware/auth'),
+    secret = process.env.JWT_SECRET;
+
+/*
+    - Login: Check if user exists, check if password matches, create token
+    - Logout: Invalidate token
+ */
 
 const login = async (req, res) => {
-    const { tag, password } = req.body;
+
+    const {tag, password} = req.body;
 
     try {
-        // Find the user in the database
-        const user = await User.findOne({ tag });
 
-        // If the user doesn't exist, send an error response
-        if (!user) {
-            return res.status(401).json({
-                error: {
-                    message: 'Invalid email or password'
-                }
-            });
-        }
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Check if the password is correct
-        const passwordMatches = await bcrypt.compare(password, user.password);
+        const user = await User.findOne({tag: tag});
+        if (!user) return res.status(400).json({message: 'User does not exist'});
 
-        // If the password is incorrect, send an error response
-        if (!passwordMatches) {
-            return res.status(401).json({
-                error: {
-                    message: 'Invalid email or password'
-                }
-            });
-        }
+        // Check if password matches
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({message: 'Invalid credentials'});
 
-        // Generate a JWT token
-        const token = jwt.sign({ userId: user._id }, secret, { expiresIn: '1h' });
+        // Create token
+        const token = jwt.sign({id: user._id}, secret, {expiresIn: 3600});
+        if (!token) return res.status(500).json({message: 'Error signing token'});
 
-        // Send the token in the response
-        res.json({ token });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            error: {
-                message: 'Internal server error'
+        return res.status(200).json({
+            token: token,
+            user: {
+                id: user._id,
+                tag: user.tag,
+                email: user.email,
+                role: user.role
             }
         });
+
+    } catch (err) {
+        console.error(err)
+        return res.status(400).json({message: err.message});
     }
 };
 const logout = async (req, res) => {
     try {
-        const token = req.headers.authorization.split(' ')[1];
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decodedToken.userId;
 
-        // Update user in the database to remove the token
-        const user = await User.findById(userId);
-        user.token = null;
-        await user.save();
+        // Get token from header
+        const token = req.header('x-auth-token');
+        if (!token) return res.status(401).json({message: 'No token, authorization denied'});
 
-        res.status(204).json({ message: 'Logout successful' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Verify token
+        const decoded = jwt.verify(token, secret);
+        if (!decoded) return res.status(401).json({message: 'Token is not valid'});
+
+        return res.status(200).json({message: 'Logout successful'});
+    } catch (err) {
+        return res.status(500).json({message: err.message});
     }
-};
+}
 
-
-module.exports = { login, logout };
+module.exports = {login, logout}
