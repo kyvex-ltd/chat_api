@@ -3,9 +3,8 @@ const
     router = express.Router(),
     CommunityController = require('../controllers/communityController');
 
-
 router.post('/', CommunityController.create);
-router.get('/', CommunityController.get);
+router.get('/:id', CommunityController.get);
 router.put('/:id', CommunityController.update);
 router.delete('/:id', CommunityController.remove);
 
