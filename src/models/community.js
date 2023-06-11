@@ -9,12 +9,17 @@ const communitySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true
+        unique: false
     },
     description: {
         type: String,
         maxlength: 200,
         default: ''
+    },
+    owner: {
+        type: String,
+        ref: 'User',
+        required: true
     },
     icon: {
         type: Buffer,
@@ -23,15 +28,6 @@ const communitySchema = new mongoose.Schema({
     banner: {
         type: Buffer,
         default: null
-    },
-
-
-
-
-    owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
     },
     members: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -44,5 +40,5 @@ const communitySchema = new mongoose.Schema({
 });
 
 // Export the model
-module.exports = mongoose.model('Community', CommunitySchema);
+module.exports = mongoose.model('Community', communitySchema);
 
