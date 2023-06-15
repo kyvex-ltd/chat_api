@@ -53,10 +53,13 @@ This API accounts for all the backend functionality of the chat application, lik
 
 #### User endpoints:
 
-- [X] POST /users - create a new user
-- [X] GET /users/:id - retrieve a specific user
-- [X] PUT /users/:id - update a specific user
-- [X] DELETE /users/:id - delete a specific user
+- In progress
+- Found [here](src/controllers/userController.js)
+
+- [ ] POST /users - create a new user
+- [ ] GET /users/:id - retrieve a specific user
+- [ ] PUT /users/:id - update a specific user
+- [ ] DELETE /users/:id - delete a specific user
 
 #### Message endpoints:
 
@@ -66,6 +69,9 @@ This API accounts for all the backend functionality of the chat application, lik
 - [ ] DELETE /messages/:id - delete a specific message
 
 #### Community endpoints:
+
+- In progress
+- Found [here](src/controllers/communityController.js)
 
 - [ ] POST /community - create a new community
 - [ ] GET /community/:id - retrieve a specific community
@@ -78,6 +84,7 @@ This API accounts for all the backend functionality of the chat application, lik
 - [ ] GET /categories/:id - retrieve a specific category
 - [ ] PUT /categories/:id - update a specific category
 - [ ] DELETE /categories/:id - delete a specific category
+
 - [ ] POST /channels - create a new channel
 - [ ] GET /channels/:id - retrieve a specific channel
 - [ ] PUT /channels/:id - update a specific channel
@@ -92,11 +99,16 @@ This API accounts for all the backend functionality of the chat application, lik
 
 #### Authentication endpoints:
 
+- In progress
+- Found [here](src/controllers/authController.js)
+
+
 - [X] POST /auth/login - authenticate a user and generate a token
 - [X] POST /auth/logout - invalidate a token and log the user out
 
 #### Direct messaging endpoints:
 
+- Found [here]()
 - [ ] POST /direct-messages - send a direct message
 - [ ] GET /direct-messages/:id - retrieve a specific direct message
 - [ ] PUT /direct-messages/:id - update a specific direct message

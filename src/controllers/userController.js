@@ -1,162 +1,93 @@
-const User = require('../models/user');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const
+    UserModel = require('../models/user'),
+    bcrypt = require('bcryptjs'),
+    jwt = require('jsonwebtoken'),
+    secret = process.env.JWT_SECRET,
+    createProfilePicture = require('../utilities/createImage');
+
+/*
+    - Create a new user
+    - Get user by ID
+    - Update user by ID
+    - Delete user by ID
+*/
 
 const regex = {
     tag: /^[a-zA-Z0-9]+$/,
-    password: /^(?=.*[A-Za-z])(?=.*\d)\w{8,}$/
+    password: /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+={}|[\]\\:';"<>?,.\\]{8,}$^/
 }
 
 
 const createUser = async (req, res) => {
 
-    console.log(`Received request to create user: ${JSON.stringify(req.body)}`);
+    const {tag, displayName, email, password} = req.body;
+    if (!tag || !displayName || !password) return res.status(400).json({msg: `Missing fields: ${!tag ? 'tag' : ''} ${!displayName ? 'displayName' : ''} ${!password ? 'password' : ''}`});
+
+    if (!regex.tag.test(tag)) return res.status(400).json({msg: 'Tag must be alphanumeric'});
+    if (!regex.password.test(password)) return res.status(400).json({msg: 'Password must be at least 8 characters long and contain at least one letter and one number'});
 
     try {
 
         const
-            {displayName, tag, password} = req.body;
+            salt = await bcrypt.genSalt(10),
+            hash = await bcrypt.hash(password, salt);
 
-        // Check that all required fields are present
-        if (!tag || !displayName || !password) {
-            return res.status(400).json({message: `Some fields are missing`
-                    + `(${!tag ? 'tag' : !displayName ? 'display name' : 'password'})`});
-        }
-
-        // Check that the tag & password are valid
-        if (!regex.tag.test(tag)) return res.status(400).json({message: 'Invalid tag '
-                + '- must contain only letters and numbers'});
-        if (!regex.password.test(password)) return res.status(400).json({message: 'Invalid password - '
-                + 'must be at least 8 characters long and contain at least one letter and one number'});
-
-        // Check that the tag is unique
-        const existingUser = await User.findOne({tag});
-        if (existingUser) return res.status(400).json({message: 'Tag already exists'});
-
-        // Hash and salt the password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const user = new User({
-            tag,
-            displayName,
-            password: hashedPassword.toString()
+        // Check if there is already a user with the same Tag
+        await UserModel.findOne({tag}, (err, user) => {
+            if (err) throw err;
+            if (user) return res.status(400).json({msg: 'Tag already taken'});
         });
 
-        try {
-            const
-                newUser = await user.save(),
-                token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET);
+        const avatar = await createProfilePicture(tag[0].toUpperCase());
 
-            return res.status(201).json({ token });
+        const newUser = new UserModel({
+            tag,
+            displayName,
+            email,
+            avatar,
+            password: hash
+        });
 
-        } catch (err) {
-            res.status(400).json({message: err.message});
-        }
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({message: "Server Error"});
+        await newUser.save();
+
+        // return user (no passwd), and token
+        return res.status(201).json({
+            msg: 'User created',
+            user: {id: newUser._id, tag: newUser.tag, displayName: newUser.displayName, email: newUser.email},
+            token: jwt.sign({id: newUser._id}, secret, {expiresIn: '168h'})
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({msg: 'Internal server error'});
     }
-};
-const getUserById = async (req, res) => {
 
-    console.log(`Received request to get user by ID: ${JSON.stringify(req.params)}`);
+};
+const getUserByTag = async (req, res) => {
+
+    const {tag} = req.params;
 
     try {
-        // check if user is authorized to update user information
-        const
-            authHeader = req.headers['authorization'],
-            token = authHeader && authHeader.split(' ')[1];
 
-        if (!token) return res.status(401).json({message: 'Authentication token required'});
+        let user = await UserModel.findOne({tag});
+        if (!user) return res.status(404).json({msg: `User "${tag}" not found`});
 
+        delete user.password;
+        return res.status(200).json({msg: 'User found', user});
 
-        const
-            {id} = req.params,
-            user = await User.findById(id);
-
-        if (!user) {
-            return res.status(404).json({message: 'User not found'});
-        }
-
-        return res.status(200).json(user);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({message: "Server Error"});
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({msg: 'Internal server error, please try again later'});
     }
 };
+
 const updateUserById = async (req, res) => {
-
-    console.log(`Received request to update user by ID: ${JSON.stringify(req.params)}`);
-
-    const
-        userId = req.params.id,
-        {displayName, tag, avatar, banner, bio, badges} = req.body;
-
-    try {
-
-        // check if user is authorized to update user information
-        const
-            authHeader = req.headers['authorization'],
-            token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) return res.status(401).json({message: 'Authentication token required'});
-
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({message: "User not found"});
-        }
-
-        // Update user fields
-        user.displayName = displayName || user.displayName;
-        user.tag = tag || user.tag;
-        user.avatar = avatar || user.avatar;
-        user.banner = banner || user.banner;
-        user.bio = bio || user.bio;
-        user.badges = badges || user.badges;
-
-        // Save updated user
-        await user.save();
-
-        return res.status(200).json({user});
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({message: "Server Error"});
-    }
 };
 const deleteUserById = async (req, res) => {
-
-    console.log(`Received request to delete user by ID: ${JSON.stringify(req.params)}`);
-
-    try {
-
-        // check if user is authorized to update user information
-        const
-            authHeader = req.headers['authorization'],
-            token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) return res.status(401).json({message: 'Authentication token required'});
-
-
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) {
-            return res.status(404).json({message: "User not found"});
-        }
-        return res.json({message: "User deleted successfully"});
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({message: "Failed to delete user"});
-    }
 };
 
-module.exports = {
-    createUser,
-    getUserById,
-    updateUserById,
-    deleteUserById,
-};
+module.exports = {createUser, getUserByTag, updateUserById, deleteUserById};
 
 
 
