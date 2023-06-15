@@ -5,6 +5,7 @@ const
     bcrypt = require('bcrypt'),
     User = require('../models/user'),
     auth = require('../middleware/auth'),
+    tokenExpiry = process.env.JWT_EXPIRY,
     secret = process.env.JWT_SECRET;
 
 /*
@@ -30,7 +31,7 @@ const login = async (req, res) => {
         if (!isMatch) return res.status(400).json({message: 'Invalid credentials'});
 
         // Create token
-        const token = jwt.sign({id: user._id}, secret, {expiresIn: 3600});
+        const token = jwt.sign({id: user._id}, secret, {expiresIn: tokenExpiry});
         if (!token) return res.status(500).json({message: 'Error signing token'});
 
         return res.status(200).json({

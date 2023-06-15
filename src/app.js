@@ -22,11 +22,13 @@ const
         auth: require('./routes/auth'),
         users: require('./routes/users'),
         community: require('./routes/community'),
+        other: require('./routes/other'),
     };
 
 app.use('/api/v1/users', routes.users);
 app.use('/api/v1/auth', routes.auth);
 app.use('/api/v1/community', routes.community);
+app.use('/api/v1/other', routes.other);
 
 
 // Set up a 404 error handler
