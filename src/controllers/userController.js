@@ -5,7 +5,8 @@ const
     bcrypt = require('bcryptjs'),
     jwt = require('jsonwebtoken'),
     secret = process.env.JWT_SECRET,
-    createProfilePicture = require('../utilities/createImage');
+    createImage = require('../utilities/createImage');
+
 
 /*
     - Create a new user
@@ -16,7 +17,7 @@ const
 
 const regex = {
     tag: /^[a-zA-Z0-9]+$/,
-    password: /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+={}|[\]\\:';"<>?,.\\]{8,}$^/
+    password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
 }
 
 
@@ -25,8 +26,11 @@ const createUser = async (req, res) => {
     const {tag, displayName, email, password} = req.body;
     if (!tag || !displayName || !password) return res.status(400).json({msg: `Missing fields: ${!tag ? 'tag' : ''} ${!displayName ? 'displayName' : ''} ${!password ? 'password' : ''}`});
 
+    console.log(`RECEIVED: Create user with username "${tag}", displayName "${displayName}" and email "${email}""`);
+
     if (!regex.tag.test(tag)) return res.status(400).json({msg: 'Tag must be alphanumeric'});
-    if (!regex.password.test(password)) return res.status(400).json({msg: 'Password must be at least 8 characters long and contain at least one letter and one number'});
+    if (!regex.password.test(password)) return res.status(400).json({msg: 'Password must be at least 8 characters long, contain at least one letter and one number'});
+
 
     try {
 
@@ -35,12 +39,16 @@ const createUser = async (req, res) => {
             hash = await bcrypt.hash(password, salt);
 
         // Check if there is already a user with the same Tag
-        await UserModel.findOne({tag}, (err, user) => {
-            if (err) throw err;
-            if (user) return res.status(400).json({msg: 'Tag already taken'});
-        });
+        // find user in db
 
-        const avatar = await createProfilePicture(tag[0].toUpperCase());
+        const user = await UserModel.findOne({tag});
+        if (user) {
+            res.status(400).json({msg: `User with username "${tag}" already exists`});
+            return console.log(`ERROR: Request to create user with username "${tag}", displayName "${displayName}" and email "${email}"" failed: User already exists`);
+        }
+
+
+        const avatar = await createImage.createProfilePicture(tag[0].toUpperCase());
 
         const newUser = new UserModel({
             tag,
@@ -51,6 +59,9 @@ const createUser = async (req, res) => {
         });
 
         await newUser.save();
+
+        console.log(`SUCCESS: Request to create user with username "${tag}", displayName "${displayName}" and email "${email}""`);
+
 
         // return user (no passwd), and token
         return res.status(201).json({
