@@ -79,11 +79,11 @@ if (useHttps) {
     https.createServer({key: key, cert: cert}, app).listen(port, () => {
         console.log(`HTTPS server running on port ${port}`);
     });
+} else {
+    app.listen(port, () => {
+        console.log(`HTTP server running on port ${port}`);
+    });
 }
-
-app.listen(port, () => {
-    console.log(`HTTP server running on port ${port}`);
-});
 
 // Export the app
 module.exports = app;
