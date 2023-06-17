@@ -10,10 +10,8 @@ app.use(express.json());
 app.use(cors())
 
 // Use HTTPS
-// Go back 1 directory, then go into the certs folder
-const key = fs.readFileSync('../certs/selfsigned.key');
-const cert = fs.readFileSync('../certs/selfsigned.crt');
-
+const key = fs.readFileSync(__dirname + '/../certs/selfsigned.key');
+const cert = fs.readFileSync(__dirname + '/../certs/selfsigned.crt');
 
 const allowCrossDomain = (req, res, next) => {
     res.header(`Access-Control-Allow-Origin`, `*`);
@@ -26,7 +24,7 @@ app.use(allowCrossDomain);
 
 
 // Connect to MongoDB
-connectDB().then(() => console.log("Connected to MongoDB")
+connectDB().then(r => console.log("Connected to MongoDB")
 ).catch(err => {
     console.error(err.message);
     process.exit(1);
