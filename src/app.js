@@ -11,8 +11,8 @@ app.use(cors())
 
 // Use HTTPS
 // 1 dir back
-const key = fs.readFileSync('../certs/selfsigned.key');
-const cert = fs.readFileSync('../certs/selfsigned.crt');
+const key = fs.readFileSync('certs/selfsigned.key');
+const cert = fs.readFileSync('certs/selfsigned.crt');
 
 const allowCrossDomain = (req, res, next) => {
     res.header(`Access-Control-Allow-Origin`, `*`);
