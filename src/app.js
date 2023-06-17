@@ -1,13 +1,27 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const https = require('https');
+const fs = require('fs');
 const connectDB = require('./utilities/db');
 
-// Use body parser middleware to parse incoming requests
+// Use body parser middleware to parse incoming requests and allow CORS
 app.use(express.json());
+app.use(cors())
 
-// Allow CORS (Cross-Origin Resource Sharing) for all origins
-app.use(cors());
+// Use HTTPS
+const key = fs.readFileSync(__dirname + '/../certs/selfsigned.key');
+const cert = fs.readFileSync(__dirname + '/../certs/selfsigned.crt');
+
+const allowCrossDomain = (req, res, next) => {
+    res.header(`Access-Control-Allow-Origin`, `*`);
+    res.header(`Access-Control-Allow-Methods`, `GET,PUT,POST,DELETE`);
+    res.header(`Access-Control-Allow-Headers`, `Content-Type`);
+    next();
+};
+
+app.use(allowCrossDomain);
+
 
 // Connect to MongoDB
 connectDB().then(r => console.log("Connected to MongoDB")
@@ -46,7 +60,6 @@ app.use((req, res, next) => {
 
 // Set up a global error handler
 app.use((error, req, res) => {
-
     res.status(error.status || 500);
     res.json({
         error: {
@@ -56,9 +69,9 @@ app.use((error, req, res) => {
 });
 
 // Start the server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}!`);
+const port = process.env.PORT || 5000;
+https.createServer({key: key, cert: cert}, app).listen(port, () => {
+    console.log(`HTTPS server running on port ${port}`);
 });
 
 // Export the app
