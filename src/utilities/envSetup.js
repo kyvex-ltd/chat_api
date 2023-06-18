@@ -36,8 +36,6 @@ async function createEnvFileManual() {
 
 class ValidationHelper {
     static validateMongoDBURI(uri) {
-        // Perform validation logic here
-        // Return true if valid, false otherwise
         return uri.startsWith('mongodb://');
     }
 
@@ -47,8 +45,6 @@ class ValidationHelper {
     }
 
     static validateJWTExpiry(expiry) {
-        // Perform validation logic here
-        // Return true if valid, false otherwise
         return /^\d+[smhdw]$/.test(expiry);
     }
 
@@ -57,22 +53,17 @@ class ValidationHelper {
     }
 
     static validateFilePath(filePath) {
-        // Perform validation logic here
-        // Return true if valid, false otherwise
         return fs.existsSync(filePath);
     }
 
     static validateEmailAddress(email) {
-        // Perform validation logic here
-        // Return true if valid, false otherwise
         return /^\S+@\S+\.\S+$/.test(email);
     }
 
     static validateEmailPassword(password) {
-        // Perform validation logic here
-        // Return true if valid, false otherwise
         return password.length >= 8;
     }
+
 }
 
 
@@ -89,24 +80,44 @@ async function createEnvFileInteractive() {
     env.write(`\n`);
 
     const questions = [
-        { field: 'MONGODB_URI', label: 'MongoDB URI', validate: ValidationHelper.validateMongoDBURI },
-        { field: 'PORT', label: 'Port', validate: ValidationHelper.validatePort },
-        { field: 'JWT_EXPIRY', label: 'JWT Expiry (e.g., 7d, 1h)', validate: ValidationHelper.validateJWTExpiry },
-        { field: 'USE_HTTPS', label: 'Use HTTPS (true/false)', validate: ValidationHelper.validateUseHTTPS },
-        { field: 'SSL_KEYS', label: 'SSL Keys File Path', validate: ValidationHelper.validateFilePath },
-        { field: 'SSL_CERTS', label: 'SSL Certificates File Path', validate: ValidationHelper.validateFilePath },
-        { field: 'EMAIL_ADDRESS', label: 'Email Address', validate: ValidationHelper.validateEmailAddress },
-        { field: 'EMAIL_PASSWORD', label: 'Email Password', validate: ValidationHelper.validateEmailPassword }
+        {field: 'MONGODB_URI', label: 'MongoDB URI', validate: ValidationHelper.validateMongoDBURI},
+        {field: 'PORT', label: 'Port', validate: ValidationHelper.validatePort},
+        {field: 'JWT_EXPIRY', label: 'JWT Expiry (e.g., 7d, 1h)', validate: ValidationHelper.validateJWTExpiry},
+        {field: 'USE_HTTPS', label: 'Use HTTPS (true/false)', validate: ValidationHelper.validateUseHTTPS},
+        {field: 'SSL_KEYS', label: 'SSL Keys File Path', validate: ValidationHelper.validateFilePath},
+        {field: 'SSL_CERTS', label: 'SSL Certificates File Path', validate: ValidationHelper.validateFilePath},
+        {field: 'EMAIL_ADDRESS', label: 'Email Address', validate: ValidationHelper.validateEmailAddress},
+        // { field: 'EMAIL_PASSWORD', label: 'Email Password', validate: ValidationHelper.validateEmailPassword, hide: true }
     ];
 
+
     for (const question of questions) {
+
+        if (question.field === 'USE_HTTPS') env.write(`# Assuming Let's Encrypt and Certbot are used\n`);
+
+        if (question.field === 'EMAIL_ADDRESS') {
+            env.write(`# This is the email address that will be used to send emails\n`);
+            env.write(`# for example, when a user requests a password reset\n`);
+            env.write(`# This is not yet implemented\n`);
+
+            console.log('Please note that this (email) feature is not yet implemented');
+            console.log('It will be implemented in a future release for password resets');
+        }
+
+        if (question.field === 'SSL_KEYS' || question.field === 'SSL_CERTS') {
+            console.log('Please note that this (HTTPS) feature is not yet implemented');
+            console.log('It will be implemented in a future release');
+        }
+
         let response;
         do {
             response = await askQuestion(rl, `${question.label}: `);
         } while (!question.validate(response));
 
-        env.write(`"${question.field}=${response}"\n`);
+        env.write(`${question.field}="${response}"\n`);
     }
+
+    env.write(`JWT_SECRET=${Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)}\n`);
 
     await new Promise((resolve) => env.end(resolve));
 
