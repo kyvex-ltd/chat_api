@@ -19,6 +19,8 @@ const login = async (req, res) => {
 
     try {
 
+        let token;
+
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -30,9 +32,12 @@ const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({message: 'Invalid credentials'});
 
-        // Create token
-        const token = jwt.sign({id: user._id}, secret, {expiresIn: tokenExpiry});
-        if (!token) return res.status(500).json({message: 'Error signing token'});
+        try {
+            token = await jwt.sign({id: user._id}, secret, {expiresIn: tokenExpiry});
+        } catch (err) {
+            console.error(err)
+            return res.status(500).json({message: 'Error signing token'});
+        }
 
         return res.status(200).json({
             token: token,
