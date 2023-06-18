@@ -1,6 +1,7 @@
 # Project specific
 images/
 certs/
+logs/
 
 .idea/**/workspace.xml
 .idea/**/tasks.xml

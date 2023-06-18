@@ -5,8 +5,11 @@ const cors = require('cors');
 const https = require('https');
 const fs = require('fs');
 const connectDB = require('./utilities/db');
+const path = require('path');
 const {createEnvFileInteractive, createEnvFileManual} = require('./utilities/envSetup');
+const logStream = fs.createWriteStream(path.join(__dirname, '../logs/requests.log'), { flags: 'a' });
 
+const requestStats = require(`../logs/request-stats.json`) || {};
 const useHttps = process.env.USE_HTTPS === 'true';
 const app = express();
 
@@ -67,6 +70,28 @@ function main() {
         process.exit(1);
     });
 
+    app.use((req, res, next) => {
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const logMessage = `${ipAddress} - ${req.method} ${req.path}`;
+        console.log(logMessage);
+        logStream.write(logMessage + '\n');
+
+        // Update request statistics
+        const pathKey = req.path;
+        if (requestStats[pathKey]) requestStats[pathKey]++;
+        else requestStats[pathKey] = 1;
+
+        next();
+    });
+
+    // Write request statistics to JSON file
+    app.use((req, res, next) => {
+        fs.writeFile(path.join(__dirname, '../logs/request-stats.json'), JSON.stringify(requestStats), (err) => {
+            if (err) console.error('Error writing request statistics:', err);
+        });
+        next();
+    });
+
     // Define your routes
     const
         routes = {
@@ -81,11 +106,12 @@ function main() {
     app.use('/api/v1/community', routes.community);
     app.use('/api/v1/other', routes.other);
 
-
     // Set up a 404 error handler
     app.use((req, res, next) => {
         const error = new Error('Not found');
         error.status = 404;
+        logStream.write(`404 ${req.method} ${req.path}\n`);
+        logStream.write(error.stack + '\n\n\n')
         next(error);
     });
 
