@@ -47,7 +47,6 @@ const createUser = async (req, res) => {
             return console.log(`ERROR: Request to create user with username "${tag}", displayName "${displayName}" and email "${email}"" failed: User already exists`);
         }
 
-
         const avatar = await createImage.createProfilePicture(tag[0].toUpperCase());
 
         const newUser = new UserModel({
@@ -58,6 +57,7 @@ const createUser = async (req, res) => {
             password: hash
         });
 
+        const token = await jwt.sign({id: newUser._id}, secret, {expiresIn: '168h'})
         await newUser.save();
 
         console.log(`SUCCESS: Request to create user with username "${tag}", displayName "${displayName}" and email "${email}""`);
@@ -67,7 +67,7 @@ const createUser = async (req, res) => {
         return res.status(201).json({
             msg: 'User created',
             user: {id: newUser._id, tag: newUser.tag, displayName: newUser.displayName, email: newUser.email},
-            token: jwt.sign({id: newUser._id}, secret, {expiresIn: '168h'})
+            token: token
         });
     } catch (e) {
         console.error(e);
