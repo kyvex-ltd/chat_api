@@ -12,6 +12,7 @@ const logStream = fs.createWriteStream(path.join(__dirname, '../logs/requests.lo
 const requestStats = require(`../logs/request-stats.json`) || {};
 const useHttps = process.env.USE_HTTPS === 'true';
 const app = express();
+const args = process.argv.slice(2);
 
 function main() {
     // Use body parser middleware to parse incoming requests and allow CORS
@@ -26,33 +27,37 @@ function main() {
         cert = fs.readFileSync(process.env.SSL_CERTS);
     }
     else {
-        // Warn the user that HTTPS is disabled and try to persuade them to use HTTPS (it is cool)
-        console.warn('=============================================================================================');
-        console.warn('HTTPS is disabled!');
-        console.warn('Please use HTTPS in production');
-        console.warn()
+        console.log(args.includes('-nhw'))
+        console.log(args.includes('--no-http-warning'))
+        if (!args.includes('--no-http-warning') || !args.includes('-nhw')) {
+            // Warn the user that HTTPS is disabled and try to persuade them to use HTTPS (it is cool)
+            console.warn('=============================================================================================');
+            console.warn('HTTPS is disabled!');
+            console.warn('Please use HTTPS in production');
+            console.warn()
 
-        // Why use HTTPS?
-        console.warn('Why use HTTPS?');
-        console.warn('> Using HTTPS is important because it encrypts the data sent between');
-        console.warn('> the client and the server. This means that if someone is listening');
-        console.warn('> in on the connection, they won\'t be able to (easily) see the data being');
-        console.warn('> sent. This is especially important when sending sensitive data');
-        console.warn('> like passwords and credit card numbers.');
-        console.warn()
+            // Why use HTTPS?
+            console.warn('Why use HTTPS?');
+            console.warn('> Using HTTPS is important because it encrypts the data sent between');
+            console.warn('> the client and the server. This means that if someone is listening');
+            console.warn('> in on the connection, they won\'t be able to (easily) see the data being');
+            console.warn('> sent. This is especially important when sending sensitive data');
+            console.warn('> like passwords and credit card numbers.');
+            console.warn()
 
-        // How do I configure HTTPS?
-        console.warn("How do I configure HTTPS?");
-        console.warn('> If you\'re using Let\'s Encrypt and Certbot, you can set the');
-        console.warn('> USE_HTTPS environment variable to true in your .env file.');
-        console.warn('> You will also need to set the SSL_KEYS and SSL_CERTS environment');
-        console.warn('> variables to the paths of your SSL keys and certificates.');
-        console.warn('> Example paths for Let\'s Encrypt and Certbot with Apache are`');
-        console.warn('> already set in the .env file, you just need to change "yourdomain.com"');
-        console.warn('> to your domain.');
-        console.warn('> For help on getting SSL certificates, see');
-        console.warn('> https://letsencrypt.org/getting-started/');
-        console.warn('=============================================================================================');
+            // How do I configure HTTPS?
+            console.warn("How do I configure HTTPS?");
+            console.warn('> If you\'re using Let\'s Encrypt and Certbot, you can set the');
+            console.warn('> USE_HTTPS environment variable to true in your .env file.');
+            console.warn('> You will also need to set the SSL_KEYS and SSL_CERTS environment');
+            console.warn('> variables to the paths of your SSL keys and certificates.');
+            console.warn('> Example paths for Let\'s Encrypt and Certbot with Apache are`');
+            console.warn('> already set in the .env file, you just need to change "yourdomain.com"');
+            console.warn('> to your domain.');
+            console.warn('> For help on getting SSL certificates, see');
+            console.warn('> https://letsencrypt.org/getting-started/');
+            console.warn('=============================================================================================');
+        }
     }
 
     const allowCrossDomain = (req, res, next) => {
@@ -99,6 +104,8 @@ function main() {
             users: require('./routes/users'),
             community: require('./routes/community'),
             other: require('./routes/other'),
+            // channel: require('./routes/channels'),
+            // category: require('./routes/categories'),
         };
 
     app.use('/api/v1/users', routes.users);
