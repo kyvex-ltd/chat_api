@@ -4,9 +4,12 @@ const
     Message = require('../models/message'),
     User = require('../models/user'),
     Channel = require('../models/channel'),
-    Server = require('../models/server'),
+    Server = require('../models/community'),
     jwt = require('jsonwebtoken');
 
+const notImplemented = async (req, res) => {
+    return res.status(501).json({status: 501, message: 'Not implemented'});
+}
 
 /*
     - [X] Create a new message
@@ -26,29 +29,29 @@ const createMessage = async (req, res) => {
 
 
     const {content, channel} = req.body;
-    if (!content || !channel) return res.status(400).json({msg: `Missing fields: ${!content ? 'content' : ''} ${!channel ? 'channel' : ''}`});
+    if (!content || !channel) return res.status(400).json({status: 400, message: `Missing fields: ${!content ? 'content' : ''} ${!channel ? 'channel' : ''}`});
 
     // Get token from header and authenticate the user
     const token = req.header('x-auth-token');
-    if (!token) return res.status(401).json({msg: 'No token, authorization denied'});
+    if (!token) return res.status(401).json({status: 401, message: 'No token, authorisation denied'});
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded) return res.status(401).json({msg: 'Token is not valid'});
+    if (!decoded) return res.status(401).json({status: 401, message: 'Invalid token'});
 
     try {
 
         // Get user from token
         const userData = await User.findById(decoded.id);
-        if (!userData) return res.status(401).json({msg: 'User does not exist'});
+        if (!userData) return res.status(401).json({message: 'User does not exist', status: 401});
 
         // Get the channel from ID
         const channelData = Channel.findById(channel);
-        if (!channelData) return res.status(401).json({msg: 'Channel does not exist'});
+        if (!channelData) return res.status(401).json({message: 'Channel does not exist', status: 401});
 
         // Get channel's parent server
         const serverData = await Server.findById(channelData.parentServer);
-        if (!serverData) return res.status(401).json({msg: 'Server does not exist'});
-        if (!serverData.members.includes(userData._id)) return res.status(401).json({msg: 'User is not a member of this server'});
-        if (!serverData.channels.includes(channelData._id)) return res.status(401).json({msg: 'Channel is not a member of this server'});
+        if (!serverData) return res.status(401).json({message: 'Server does not exist', status: 401});
+        if (!serverData.members.includes(userData._id)) return res.status(401).json({message: 'User is not a member of this server', status: 401});
+        if (!serverData.channels.includes(channelData._id)) return res.status(401).json({message: 'Channel is not a member of this server', status: 401});
 
         // Create message
         const newMessage = new Message({
@@ -58,35 +61,34 @@ const createMessage = async (req, res) => {
         });
 
         // Save message
-        const savedMessage = await newMessage.save();
-        if (!savedMessage) return res.status(500).json({msg: 'Error saving message'});
-        return res.status(200).json(savedMessage);
+        const savedMessage= await newMessage.save();
+        if (!savedMessage) return res.status(500).json({status: 500, message: 'Failed to save message'});
+        return res.status(200).json({status: 200, message: 'Message created', messageData: savedMessage});
 
     } catch (err) {
         console.error(err.stack);
-        return res.status(500).json({msg: err.message});
+        return res.status(500).json({message: err.message});
     }
-
-
 }
 
 const getMessages = async (req, res) => {
+    return notImplemented(req, res);
 }
 
 const getMessageById = async (req, res) => {
 
     const {id} = req.params;
-    if (!id) return res.status(400).json({msg: 'Missing message ID'});
+    if (!id) return res.status(400).json({message: 'Missing message ID', status: 400});
 
     try {
 
         const messageData = await Message.findById(id);
-        if (!messageData) return res.status(404).json({msg: 'Message does not exist'});
-        return res.status(200).json(messageData);
+        if (!messageData) return res.status(404).json({message: 'Message does not exist`', status: 404});
+        return res.status(200).json({status: 200, messageData});
 
     } catch (err) {
         console.error(err.stack);
-        return res.status(500).json({msg: err.message});
+        return res.status(500).json({message: "Internal server error", status: 500});
     }
 }
 
@@ -98,34 +100,36 @@ const removeMessage = async (req, res) => {
     // Then delete the message and return a 200 OK
 
     const {id} = req.params;
-    if (!id) return res.status(400).json({msg: 'Missing message ID'});
+    if (!id) return res.status(400).json({message: 'Missing message ID', status: 400});
 
     try {
 
         // Get token from header and authenticate the user
         const token = req.header('x-auth-token');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!token) return res.status(401).json({msg: 'No token, authorization denied'});
-        if (!decoded) return res.status(401).json({msg: 'Token is not valid'});
+        if (!token) return res.status(401).json({message: 'Token is not valid', status: 401});
+        if (!decoded) return res.status(401).json({message: 'Token is not valid', status: 401});
 
         // Get user from token
         const userData = await User.findById(decoded.id);
 
         // Get the message from ID
         const message = Messages.findById(id);
-        if (!message) return res.status(404).json({msg: 'Message does not exist'});
-        if (!message.author === userData._id) return res.status(401).json({msg: 'User is not the author of this message'});
+        if (!message) return res.status(404).json({message: 'Message does not exist', status: 404});
+        if (!message.author === userData._id) return res.status(401).json({message: 'User is not the author of this message', status: 401});
 
         const deletedMessage = await message.deleteOne();
-        if (!deletedMessage) return res.status(500).json({msg: 'Error deleting message'});
-        return res.status(200).json(deletedMessage);
+        if (!deletedMessage) return res.status(500).json({message: 'Error deleting message', status: 500});
+        return res.status(200).json({message: 'Message deleted', status: 200});
 
     } catch (err) {
         console.error(err.stack);
-        return res.status(500).json({msg: "Internal server error"});
+        return res.status(500).json({message: "Internal server error", status: 500});
     }
 }
 
-const updateMessage = async (req, res) => {}
+const updateMessage = async (req, res) => {
+    return notImplemented(req, res);
+}
 
-module.exports = {createMessage, getMessageById, removeMessage };
+module.exports = {createMessage, getMessageById, removeMessage, updateMessage, getMessages};
