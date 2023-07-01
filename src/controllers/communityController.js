@@ -49,11 +49,8 @@ const createCommunity = async (req, res) => {
 const getCommunityById = async (req, res) => {
     const { id } = req.params;
 
-    if (!id) {
-        return res.status(400).json({ message: `Please provide a community ID`, status: 400 });
-    }
-
-    try {
+    if (!id) return res.status(400).json({ message: `Please provide a community ID`, status: 400 });
+        try {
         const community = await Community.findOne({ _id: id });
 
         if (!community) {

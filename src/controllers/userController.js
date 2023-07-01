@@ -85,7 +85,19 @@ const createUser = async (req, res) => {
 };
 const getUserByTag = async (req, res) => {
 
-    const {tag, token} = req.params;
+    // use the AUTH middleware to get and verify the token
+    // Note: The token isn't a requirement for this route, so if it's not present, we just return the user without
+    // sensitive information (email, password, preferences etc.)
+
+    const {tag} = req.params;
+    let token;
+
+    try {
+        token = req.headers.authorization.split(' ')[1];
+    } catch (e) {
+        console.error(e);
+    }
+
     if (!tag) return res.status(400).json({
         status: 400,
         message: 'Missing tag'
@@ -96,55 +108,49 @@ const getUserByTag = async (req, res) => {
         message: 'Tag must be alphanumeric'
     });
 
+
     try {
 
-        let user = await UserModel.findOne({tag});
-        if (!user) return res.status(400).json({
-            status: 404,
-            msg: `User "${tag}" not found`
-        });
+        let {status, message, user} = await auth(req.headers.authorization.split(' ')[1]);
+        const userData = user;
+        userData.password = undefined;
 
-        // If the user is the same as the one requesting the data, return all the data
-        if (token) {
+        if (status === 401) {
+            userData.email = undefined;
+            userData.preferences = undefined;
+            userData.servers = undefined;
 
-            const decoded = await jwt.verify(token, secret);
-            if (decoded.id === user._id) {
-                return res.status(200).json({
-                    status: 200,
-                    message: 'User found',
-                    user: {
-                        id: user._id,
-                        tag: user.tag,
-                        displayName: user.displayName,
-                        avatar: user.avatar,
-                        bio: user.bio,
-                        friends: user.friends,
-                        createdAt: user.createdAt
-                    }
-                });
-            }
+            return res.status(200).json({
+                status: 200,
+                message: 'User found, but with reduced data due to missing or invalid token',
+                user: userData
+            });
+        } else if (status === 404) {
+            return res.status(404).json({
+                status: 404,
+                message: 'User not found'
+            });
+        } else if (status === 200) {
+            return res.status(200).json({
+                status: 200,
+                message: 'User found with elevated data',
+                user: userData
+            });
+        } else {
+            return res.status(500).json({
+                status: 500,
+                message: 'Internal server error'
+            });
         }
-
-        return res.status(200).json({
-            status: 200,
-            message: 'User found',
-            user: {
-                id: user._id,
-                tag: user.tag,
-                displayName: user.displayName,
-                avatar: user.avatar,
-                bio: user.bio,
-                friends: user.friends,
-                createdAt: user.createdAt
-            }
-        });
-
-
     } catch (e) {
         console.error(e);
-        res.status(500).json({msg: 'Internal server error, please try again later'});
+        return res.status(500).json({
+            status: 500,
+            message: 'Internal server error'
+        });
     }
 };
+
 
 const updateUserById = async (req, res) => {
 };
