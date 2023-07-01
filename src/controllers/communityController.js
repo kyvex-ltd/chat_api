@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const pictureGenerator = require('../utilities/createImage');
 const { authorise } = require('../utilities/auth');
+const userModel = require("../models/user");
 
 const createCommunity = async (req, res) => {
     const { name, description } = req.body;
@@ -18,8 +19,9 @@ const createCommunity = async (req, res) => {
     }
 
     try {
-        const userData = authorise(req.headers.authorization);
-        if (userData.status !== 200) return res.status(userData.status).json({ status: userData.status, message: userData.message });
+        let userData = await auth(req.headers.authorization.split(' ')[1]);
+        if (userData.status !== 200) return res.status(userData.status).json({ message: userData.message, status: userData.status });
+        userData = userData.user;
 
         const community = new Community({
             name,

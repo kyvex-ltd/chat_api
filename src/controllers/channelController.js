@@ -2,6 +2,7 @@ const Channel = require('../models/channel');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const {authorise} = require('../utilities/auth');
+const auth = require("../middleware/auth");
 
 const createChannel = async (req, res) => {
 
@@ -18,8 +19,9 @@ const createChannel = async (req, res) => {
 
     try {
 
-        const userData = authorise(req.headers.authorization);
-        if (userData.status !== 200) return res.status(userData.status).json({userData, message: userData.message, status: userData.status});
+        let userData = await auth(req.headers.authorization.split(' ')[1]);
+        if (userData.status !== 200) return res.status(userData.status).json({ message: userData.message, status: userData.status });
+        userData = userData.user;
 
         const channel = new Channel({
             name,

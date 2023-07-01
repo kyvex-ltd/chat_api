@@ -6,6 +6,7 @@ const
     Channel = require('../models/channel'),
     Server = require('../models/community'),
     jwt = require('jsonwebtoken');
+const auth = require("../middleware/auth");
 
 const notImplemented = async (req, res) => {
     return res.status(501).json({status: 501, message: 'Not implemented'});
@@ -18,7 +19,12 @@ const notImplemented = async (req, res) => {
     - [ ] Get messages by user ID - contemplating whether this should be implemented
     - [ ] Edit a message by ID - Soon
  */
-
+/**
+ *
+ * @param req
+ * @param res
+ * @returns {Promise<*>}
+ */
 const createMessage = async (req, res) => {
 
     // Check that required fields are present
@@ -32,17 +38,11 @@ const createMessage = async (req, res) => {
     if (!content || !channel) return res.status(400).json({status: 400, message: `Missing fields: ${!content ? 'content' : ''} ${!channel ? 'channel' : ''}`});
 
     // Get token from header and authenticate the user
-    const token = req.header('x-auth-token');
-    if (!token) return res.status(401).json({status: 401, message: 'No token, authorisation denied'});
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded) return res.status(401).json({status: 401, message: 'Invalid token'});
+    let userData = await auth(req.headers.authorization.split(' ')[1]);
+    if (userData.status !== 200) return res.status(userData.status).json({ message: userData.message, status: userData.status });
+    userData = userData.user;
 
     try {
-
-        // Get user from token
-        const userData = await User.findById(decoded.id);
-        if (!userData) return res.status(401).json({message: 'User does not exist', status: 401});
-
         // Get the channel from ID
         const channelData = Channel.findById(channel);
         if (!channelData) return res.status(401).json({message: 'Channel does not exist', status: 401});
@@ -105,13 +105,9 @@ const removeMessage = async (req, res) => {
     try {
 
         // Get token from header and authenticate the user
-        const token = req.header('x-auth-token');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!token) return res.status(401).json({message: 'Token is not valid', status: 401});
-        if (!decoded) return res.status(401).json({message: 'Token is not valid', status: 401});
-
-        // Get user from token
-        const userData = await User.findById(decoded.id);
+        let userData = await auth(req.headers.authorization.split(' ')[1]);
+        if (userData.status !== 200) return res.status(userData.status).json({ message: userData.message, status: userData.status });
+        userData = userData.user;
 
         // Get the message from ID
         const message = Messages.findById(id);

@@ -9,7 +9,6 @@ const path = require('path');
 const {createEnvFileInteractive, createEnvFileManual} = require('./utilities/envSetup');
 const logStream = fs.createWriteStream(path.join(__dirname, '../logs/requests.log'), { flags: 'a' });
 
-const requestStats = require(`../logs/request-stats.json`) || {};
 const useHttps = process.env.USE_HTTPS === 'true';
 const app = express();
 const args = process.argv.slice(2);
@@ -75,28 +74,6 @@ function main() {
         process.exit(1);
     });
 
-    app.use((req, res, next) => {
-        const ipAddress = req.ip || req.connection.remoteAddress;
-        const logMessage = `${ipAddress} - ${req.method} ${req.path}`;
-        console.log(logMessage);
-        logStream.write(logMessage + '\n');
-
-        // Update request statistics
-        const pathKey = req.path;
-        if (requestStats[pathKey]) requestStats[pathKey]++;
-        else requestStats[pathKey] = 1;
-
-        next();
-    });
-
-    // Write request statistics to JSON file
-    app.use((req, res, next) => {
-        fs.writeFile(path.join(__dirname, '../logs/request-stats.json'), JSON.stringify(requestStats), (err) => {
-            if (err) console.error('Error writing request statistics:', err);
-        });
-        next();
-    });
-
     // Define your routes
     const
         routes = {
@@ -106,37 +83,14 @@ function main() {
             other: require('./routes/other'),
             // channel: require('./routes/channels'),
             // category: require('./routes/categories'),
-        };
+            };
 
     app.use('/api/v1/users', routes.users);
     app.use('/api/v1/auth', routes.auth);
     app.use('/api/v1/community', routes.community);
     app.use('/api/v1/other', routes.other);
 
-    // Set up a 404 error handler
-    app.use((req, res, next) => {
-        const error = new Error('Not found');
-        error.status = 404;
-        logStream.write(`404 ${req.method} ${req.path}\n`);
-        logStream.write(error.stack + '\n\n\n')
-        next(error);
-    });
 
-    // Log when a request is made
-    app.use((req, res, next) => {
-        console.log(`${req.method} ${req.path}`);
-        next();
-    });
-
-    // Set up a global error handler
-    app.use((error, req, res) => {
-        res.status(error.status || 500);
-        res.json({
-            error: {
-                message: error.message,
-            },
-        });
-    });
 
     // Start the server
     const port = process.env.PORT || 3000;
@@ -149,6 +103,21 @@ function main() {
             console.log(`HTTP server running on port ${port}`);
         });
     }
+
+    // Set up a 404 error handler
+    app.use((req, res, next) => {
+        const error = new Error('Endpoint not found');
+        error.status = 404;
+        logStream.write(`404 ${req.method} ${req.path}\n`);
+        logStream.write(error.message + '\n\n\n')
+        next(error);
+    });
+
+// Set up a global error handler
+    app.use((error, req, res, next) => {
+        logStream.write(`Error: ${error.message}\n`);
+        res.status(error.status || 500).send({ status: error.status || 500, message: error.message });
+    });
 
     // Export the app
     module.exports = app;

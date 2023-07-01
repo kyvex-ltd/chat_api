@@ -1,20 +1,21 @@
-const
-    jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
+const userModel = require('../models/user');
 
 // Authentication middle ware
-const auth = async (req, res, next) => {
+async function auth(token) {
+    // Check if the token is valid
     try {
-        // Authenticate the user
-        const
-            token = req.headers.authorization.split(' ')[1],
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded) return {status: 401, message: 'Invalid token'};
 
-        // Add user to request
-        req.user = decoded;
+        // Check if the user exists
+        const user = await userModel.findOne({_id: decoded.id});
+        if (!user) return {status: 404, message: 'User not found'};
 
-        next();
-    } catch (error) {
-        res.status(401).json({ error: error.message });
+        return {status: 200, message: 'OK', user: user};
+
+    } catch (e) {
+        return {status: 401, message: 'Invalid token'};
     }
 }
 

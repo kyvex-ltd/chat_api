@@ -5,7 +5,8 @@ const
     bcrypt = require('bcryptjs'),
     jwt = require('jsonwebtoken'),
     secret = process.env.JWT_SECRET,
-    createImage = require('../utilities/createImage');
+    createImage = require('../utilities/createImage'),
+    auth = require('../middleware/auth');
 
 
 /*
@@ -84,7 +85,16 @@ const createUser = async (req, res) => {
 };
 const getUserByTag = async (req, res) => {
 
-    const {tag} = req.params;
+    const {tag, token} = req.params;
+    if (!tag) return res.status(400).json({
+        status: 400,
+        message: 'Missing tag'
+    });
+
+    if (!regex.tag.test(tag)) return res.status(400).json({
+        status: 400,
+        message: 'Tag must be alphanumeric'
+    });
 
     try {
 
@@ -94,11 +104,39 @@ const getUserByTag = async (req, res) => {
             msg: `User "${tag}" not found`
         });
 
-        delete user.password;
+        // If the user is the same as the one requesting the data, return all the data
+        if (token) {
+
+            const decoded = await jwt.verify(token, secret);
+            if (decoded.id === user._id) {
+                return res.status(200).json({
+                    status: 200,
+                    message: 'User found',
+                    user: {
+                        id: user._id,
+                        tag: user.tag,
+                        displayName: user.displayName,
+                        avatar: user.avatar,
+                        bio: user.bio,
+                        friends: user.friends,
+                        createdAt: user.createdAt
+                    }
+                });
+            }
+        }
+
         return res.status(200).json({
             status: 200,
             message: 'User found',
-            user: user
+            user: {
+                id: user._id,
+                tag: user.tag,
+                displayName: user.displayName,
+                avatar: user.avatar,
+                bio: user.bio,
+                friends: user.friends,
+                createdAt: user.createdAt
+            }
         });
 
 
@@ -114,8 +152,3 @@ const deleteUserById = async (req, res) => {
 };
 
 module.exports = {createUser, getUserByTag, updateUserById, deleteUserById};
-
-
-
-
-
