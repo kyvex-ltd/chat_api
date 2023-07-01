@@ -7,6 +7,7 @@ const
     tokenExpiry = process.env.JWT_EXPIRY,
     secret = process.env.JWT_SECRET;
 const authorise = require("../utilities/auth");
+const auth = require("../middleware/auth");
 
 /*
     - Login: Check if user exists, check if password matches, create token
@@ -16,7 +17,7 @@ const authorise = require("../utilities/auth");
 
 const login = async (req, res) => {
 
-    const {tag, password} = req.body;
+    const {password, tag} = req.body;
 
     try {
 
@@ -24,13 +25,13 @@ const login = async (req, res) => {
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hash = await bcrypt.hash(password, salt);
 
         const user = await User.findOne({tag: tag});
         if (!user) return res.status(400).json({status: 400, message: 'User does not exist'});
 
         // Check if password matches
-        const isMatch = await bcrypt.compare(hashedPassword, user.password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({status: 400, message: 'Invalid credentials'});
 
         try {
@@ -68,12 +69,27 @@ const logout = async (req, res) => {
 
         return res.status(200).json({status: 200, message: 'Logged out successfully'});
     } catch (err) {
-        return res.status(500).json({status: 500, message: err.message});
+        return res.status(500).json({status: 500, message: "Internal server error"});
     }
 };
 const loggedIn = async (req, res) => {
-    const userData = authorise(req.headers.authorization);
-    if (userData.status !== 200) return res.status(userData.status).json({status: userData.status, message: userData.message});
+    try {
+        let userData = await auth(req.headers.authorization.split(' ')[1]);
+        if (userData.status !== 200) return res.status(userData.status).json({
+            message: userData.message,
+            status: userData.status
+        });
+        userData = userData.user;
+
+        return res.status(200).json({
+            status: 200,
+            message: 'User is logged in'
+        });
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).json({status: 500, message: "Internal server error"});
+    }
 }
 
 module.exports = {login, logout, loggedIn}
