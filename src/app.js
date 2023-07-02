@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const responseTime = require('response-time');
 const express = require('express');
 const cors = require('cors');
 const https = require('https');
@@ -17,6 +18,10 @@ function main() {
     // Use body parser middleware to parse incoming requests and allow CORS
     app.use(express.json());
     app.use(cors())
+    app.use(responseTime((req, res, time) => {
+        logStream.write(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${time}ms\n`);
+    }));
+
 
     let cert, key;
 
@@ -116,7 +121,7 @@ function main() {
 // Set up a global error handler
     app.use((error, req, res, next) => {
         logStream.write(`Error: ${error.message}\n`);
-        res.status(error.status || 500).send({ status: error.status || 500, message: error.message });
+        res.status(error.status || 500).send({ status: error.status || 500, message: `C: ${error.status}: ${error.message}` });
     });
 
     // Export the app

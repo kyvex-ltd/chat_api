@@ -12,10 +12,14 @@ const getCount = async (Model, req, res) => {
     }
 }
 
+const ping = (req, res) => {
+    return res.status(200).json({ status: 200, message: 'Pong!' });
+}
 const getUserCount = (req, res) => getCount(User, req, res);
 const getCommunityCount = (req, res) => getCount(Community, req, res);
 
 module.exports = {
     getUserCount,
-    getCommunityCount
+    getCommunityCount,
+    ping
 }
