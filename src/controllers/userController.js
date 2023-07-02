@@ -24,7 +24,7 @@ const regex = {
 
 const createUser = async (req, res) => {
 
-    const {tag, displayName, email, password} = req.body;
+    const {tag, displayName, password, email} = req.body;
     if (!tag || !displayName || !password) return res.status(400).json({
         status: 400,
         message: `Missing fields: ${!tag ? 'tag' : ''} ${!displayName ? 'displayName' : ''} ${!password ? 'password' : ''}`
@@ -38,6 +38,7 @@ const createUser = async (req, res) => {
         status: 400,
         message: 'Password must be at least 8 characters long, contain at least one letter and one number'
     });
+
 
     try {
 
