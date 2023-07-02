@@ -23,7 +23,6 @@ const regex = {
 
 
 const createUser = async (req, res) => {
-    console.log("Hi")
 
     const {tag, displayName, password, email} = req.body;
     if (!tag || !displayName || !password) return res.status(400).json({
@@ -42,8 +41,6 @@ const createUser = async (req, res) => {
 
 
     try {
-
-        console.log("Hi")
 
         const
             salt = await bcrypt.genSalt(10),
